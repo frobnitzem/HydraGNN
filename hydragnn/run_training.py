@@ -162,6 +162,7 @@ def run_training(config_file="./examples/configuration.json"):
     else:
         writer = SummaryWriter("./logs/" + model_with_config_name)
 
+    os.makedirs("./logs/" + model_with_config_name, exist_ok=True)
     with open("./logs/" + model_with_config_name + "/config.json", "w") as f:
         json.dump(config, f)
 
