@@ -18,6 +18,8 @@ from hydragnn.preprocess.serialized_dataset_loader import SerializedDataLoader
 from hydragnn.postprocess.visualizer import Visualizer
 from hydragnn.utils.print_utils import print_distributed, iterate_tqdm
 
+import os
+from torch.profiler import profile, record_function, ProfilerActivity
 
 def train_validate_test(
     model,
@@ -34,6 +36,7 @@ def train_validate_test(
     plot_hist_solution=False,
 ):
     num_epoch = config["Training"]["num_epoch"]
+    os.environ["CONFIG_NAME"] = model_with_config_name
     # total loss tracking for train/vali/test
     total_loss_train = []
     total_loss_val = []
@@ -156,6 +159,13 @@ def train_validate_test(
         config["Variables_of_interest"]["output_names"],
     )
 
+def trace_handler(p):
+    rank = os.getenv("RANK")
+    epoch = os.getenv("EPOCH")
+    model_with_config_name = os.getenv("CONFIG_NAME")
+    print ('Total number of events:', len(p.events()))
+    #p.export_chrome_trace("trace%s-%s-%d.json"%(rank, epoch, p.step_num))
+    torch.profiler.tensorboard_trace_handler("./logs/" + model_with_config_name)(p)
 
 def train(loader, model, opt, verbosity):
 
@@ -166,19 +176,40 @@ def train(loader, model, opt, verbosity):
     model.train()
 
     total_error = 0
-    for data in iterate_tqdm(loader, verbosity):
-        data = data.to(device)
-        opt.zero_grad()
+    with profile(
+        activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+        schedule=torch.profiler.schedule(
+            skip_first=10,
+            wait=5,
+            warmup=1,
+            active=3,
+            repeat=1),
+        on_trace_ready=trace_handler,
+        record_shapes=True,
+        with_stack=True,
+        ) as prof:
+        for data in iterate_tqdm(loader, verbosity):
+            with record_function('load'):
+                data = data.to(device)
 
-        pred = model(data)
-        loss, tasks_rmse, tasks_nodes = model.loss_rmse(pred, data.y)
+            with record_function('zero_grad'):
+                opt.zero_grad()
 
-        loss.backward()
-        opt.step()
-        total_error += loss.item() * data.num_graphs
-        for itask in range(len(tasks_rmse)):
-            tasks_error[itask] += tasks_rmse[itask].item() * data.num_graphs
-            tasks_noderr[itask] += tasks_nodes[itask].item() * data.num_graphs
+            with record_function('forward'):
+                pred = model(data)
+                loss, tasks_rmse, tasks_nodes = model.loss_rmse(pred, data.y)
+
+            with record_function('backward'):
+                loss.backward()
+
+            with record_function('optstep'):
+                opt.step()
+
+            total_error += loss.item() * data.num_graphs
+            for itask in range(len(tasks_rmse)):
+                tasks_error[itask] += tasks_rmse[itask].item() * data.num_graphs
+                tasks_noderr[itask] += tasks_nodes[itask].item() * data.num_graphs
+            prof.step()
     return (
         total_error / len(loader.dataset),
         tasks_error / len(loader.dataset),
