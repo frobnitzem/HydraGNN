@@ -237,6 +237,7 @@ class Base(torch.nn.Module):
     def __str__(self):
         return "Base"
 
+
 class mlp_node_feature(Module):
     def __init__(self, input_dim, output_dim, num_nodes, hidden_dim_node):
         super().__init__()
