@@ -94,7 +94,7 @@ def pytest_train_model(model_type, ci_input, overwrite_data=False):
         "GIN": [0.10, 0.85],
         "GAT": [0.80, 0.85],
         # fixme: error for cgcnn will be reduced after edge attributes being implemented
-        "CGCNN": [0.20, 0.95],
+        "CGCNN": [0.30, 0.95],
     }
     verbosity = 2
 
