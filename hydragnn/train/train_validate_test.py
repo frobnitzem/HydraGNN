@@ -20,7 +20,9 @@ from hydragnn.utils.print_utils import print_distributed, iterate_tqdm
 
 import os
 from torch.profiler import profile, record_function, ProfilerActivity
-
+import contextlib
+from unittest.mock import MagicMock
+    
 def train_validate_test(
     model,
     optimizer,
@@ -77,6 +79,7 @@ def train_validate_test(
             iepoch=-1,
         )
     for epoch in range(0, num_epoch):
+        os.environ["CURRENT_EPOCH"] = str(epoch)
         train_mae, train_taskserr, train_taskserr_nodes = train(
             train_loader, model, optimizer, verbosity
         )
@@ -176,18 +179,21 @@ def train(loader, model, opt, verbosity):
     model.train()
 
     total_error = 0
-    with profile(
-        activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-        schedule=torch.profiler.schedule(
-            skip_first=10,
-            wait=5,
-            warmup=1,
-            active=3,
-            repeat=1),
-        on_trace_ready=trace_handler,
-        record_shapes=True,
-        with_stack=True,
-        ) as prof:
+    profiler = contextlib.nullcontext(MagicMock(name='step'))
+    if int(os.environ["CURRENT_EPOCH"]) == 0:
+        profiler = profile(
+            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+            schedule=torch.profiler.schedule(
+                skip_first=10,
+                wait=5,
+                warmup=1,
+                active=3,
+                repeat=1),
+            on_trace_ready=trace_handler,
+            record_shapes=True,
+            with_stack=True,
+            )
+    with profiler as prof:
         for data in iterate_tqdm(loader, verbosity):
             with record_function('load'):
                 data = data.to(device)
