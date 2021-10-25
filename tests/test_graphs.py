@@ -97,7 +97,7 @@ def pytest_train_model(model_type, ci_input, overwrite_data=False):
         "PNA": [0.10, 0.20],
         "MFC": [0.10, 0.25],
         "GIN": [0.10, 0.85],
-        "GAT": [0.80, 0.85],
+        "GAT": [0.80, 0.95],
         # fixme: error for cgcnn will be reduced after edge attributes being implemented
         "CGCNN": [0.30, 0.95],
     }
