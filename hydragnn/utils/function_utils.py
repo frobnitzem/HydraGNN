@@ -72,18 +72,18 @@ def load_minmax_to_config(dataset_path, config):
     ]
     for item in feature_indices:
         config["NeuralNetwork"]["Variables_of_interest"]["x_minmax"].append(
-            node_minmax[:, :, item].tolist()
+            node_minmax[:, item].tolist()
         )
     output_type = config["NeuralNetwork"]["Variables_of_interest"]["type"]
     output_index = config["NeuralNetwork"]["Variables_of_interest"]["output_index"]
     for item in range(len(output_type)):
         if output_type[item] == "graph":
             config["NeuralNetwork"]["Variables_of_interest"]["y_minmax"].append(
-                graph_minmax[:, output_index[item], None].tolist()
+                graph_minmax[:, output_index[item]].tolist()
             )
         elif output_type[item] == "node":
             config["NeuralNetwork"]["Variables_of_interest"]["y_minmax"].append(
-                node_minmax[:, :, output_index[item]].tolist()
+                node_minmax[:, output_index[item]].tolist()
             )
         else:
             raise ValueError("Unknown output type", output_type[item])
