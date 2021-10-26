@@ -39,7 +39,7 @@ def pytest_train_model(model_type, ci_input, overwrite_data=False):
         config["NeuralNetwork"]["Architecture"]["task_weights"][0] = 1
 
     if rank == 0:
-        num_samples_tot = 800
+        num_samples_tot = 500
         for dataset_name, data_path in config["Dataset"]["path"]["raw"].items():
             if overwrite_data:
                 shutil.rmtree(data_path)
@@ -96,7 +96,7 @@ def pytest_train_model(model_type, ci_input, overwrite_data=False):
     thresholds = {
         "PNA": [0.10, 0.20],
         "MFC": [0.10, 0.25],
-        "GIN": [0.10, 0.85],
+        "GIN": [0.15, 0.85],
         "GAT": [0.80, 0.95],
         # fixme: error for cgcnn will be reduced after edge attributes being implemented
         "CGCNN": [0.30, 0.95],
