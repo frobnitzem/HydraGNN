@@ -24,7 +24,7 @@ from hydragnn.utils.time_utils import print_timers
 from hydragnn.utils.function_utils import (
     check_if_graph_size_constant,
     update_config_NN_outputs,
-    load_minmax_to_config,
+    update_config_minmax,
     get_model_output_name,
 )
 from hydragnn.models.create import create, get_device
@@ -71,42 +71,12 @@ def _(config: dict):
         "denormalize_output" in config["NeuralNetwork"]["Variables_of_interest"]
         and config["NeuralNetwork"]["Variables_of_interest"]["denormalize_output"]
     ):
-<<<<<<< HEAD
         if "total" in config["Dataset"]["path"]["raw"].items():
             dataset_path = f"{os.environ['SERIALIZED_DATA_PATH']}/serialized_dataset/{config['Dataset']['name']}.pkl"
         else:
             ###used for min/max values loading below
             dataset_path = f"{os.environ['SERIALIZED_DATA_PATH']}/serialized_dataset/{config['Dataset']['name']}_train.pkl"
-        with open(dataset_path, "rb") as f:
-            node_minmax = pickle.load(f)
-            graph_minmax = pickle.load(f)
-        config["NeuralNetwork"]["Variables_of_interest"]["x_minmax"] = []
-        config["NeuralNetwork"]["Variables_of_interest"]["y_minmax"] = []
-        feature_indices = [
-            i
-            for i in config["NeuralNetwork"]["Variables_of_interest"][
-                "input_node_features"
-            ]
-        ]
-        for item in feature_indices:
-            config["NeuralNetwork"]["Variables_of_interest"]["x_minmax"].append(
-                node_minmax[:, :, item].tolist()
-            )
-        for item in range(len(output_type)):
-            if output_type[item] == "graph":
-                config["NeuralNetwork"]["Variables_of_interest"]["y_minmax"].append(
-                    graph_minmax[:, output_index[item], None].tolist()
-                )
-            elif output_type[item] == "node":
-                config["NeuralNetwork"]["Variables_of_interest"]["y_minmax"].append(
-                    node_minmax[:, :, output_index[item]].tolist()
-                )
-            else:
-                raise ValueError("Unknown output type", output_type[item])
-=======
-        dataset_path = f"{os.environ['SERIALIZED_DATA_PATH']}/serialized_dataset/{config['Dataset']['name']}.pkl"
-        config = load_minmax_to_config(dataset_path, config)
->>>>>>> 7329eb7 (move functions to function_utilis.py)
+        config = update_config_minmax(dataset_path, config)
     else:
         config["NeuralNetwork"]["Variables_of_interest"]["denormalize_output"] = False
 
